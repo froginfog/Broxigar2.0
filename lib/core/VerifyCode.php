@@ -7,7 +7,7 @@ class VerifyCode {
     private $length;
     private $snow;
     private $line;
-    private $font = ['static/font/Elephant.ttf']; //todo
+    private $font=[];
     private $chars = 'abcdefghkmnprstuvwxyzABCDEFGHKMNPRSTUVWXYZ23456789';
     private $img;
     private $code;
@@ -20,13 +20,28 @@ class VerifyCode {
      * @param int $snow
      * @param int $line
      */
-    public function __construct($width, $height, $length=4, $snow=0, $line=0){
+    public function __construct($width, $height, $length=4, $snow=10, $line=10){
         $this->width = $width;
         $this->height = $height;
         $this->length = $length;
         $this->snow = $snow;
         $this->line = $line;
+        $this->font = $this->getFont();
         $this->code = $this->setCode();
+    }
+
+    private function getFont(){
+        $fold = APP_ROOT.'/lib/font/';
+        $font = [];
+        if($handle = opendir($fold)){
+            while(false !== ($file = readdir($handle))){
+                if( $file  !=  "."  and  $file  !=  ".." ){
+                    $font[] = $fold.$file;
+                }
+            }
+            closedir($handle);
+        }
+        return $font;
     }
 
     private function setCode(){
@@ -65,10 +80,11 @@ class VerifyCode {
 
     private function writeCode(){
         for($i = 0; $i < $this->length; $i++){
-            $fontSize = mt_rand(18,20);
-            $angle = mt_rand(-40, 40);
-            $x = mt_rand(1, 4) + $i * (100 / $this->length);
-            $y = mt_rand($this->height-15 ,$this->height-10);
+            $fontSize = mt_rand(($this->width*0.8)/$this->length,($this->width*0.85)/$this->length);
+            $angle = mt_rand(-30, 30);
+            $x = mt_rand(1, 4) + $i * ($this->width / $this->length);
+            $y = mt_rand($this->height*0.7 ,$this->height*0.8);
+
             $color = imagecolorallocate($this->img, mt_rand(20, 120), mt_rand(20, 120), mt_rand(20, 120));
             $font = array_rand($this->font);
             $str = substr($this->code, $i, 1);
