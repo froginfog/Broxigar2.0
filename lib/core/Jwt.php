@@ -38,10 +38,11 @@ class Jwt {
      * @param \lib\core\Encrypt $encrypt
      * @return string
      */
-    public function makeJwt(array $payload, Encrypt $encrypt){
+    public function makeJwt(array $payload){
         $header = $this->makeHeader();
         $payload = $this->makePayload($payload);
         $str = $header.'.'.$payload;
+        $encrypt = new Encrypt();
         $signature = $encrypt->encode($str);
         $res = $header.'.'.$payload.'.'.$signature;
         return $res;
@@ -53,7 +54,7 @@ class Jwt {
      * @param \lib\core\Encrypt $encrypt
      * @return bool|mixed
      */
-    public function resolveJwt($jwtstr, Encrypt $encrypt){
+    public function resolveJwt($jwtstr){
         //把收到的jwt串拆成数组
         $jwtarr = explode('.', $jwtstr);
         //数组长度不是3 出错
@@ -66,6 +67,7 @@ class Jwt {
         //如果过期 出错
         if($payloadArr['exp'] < $_SERVER['REQUEST_TIME']) return false;
         //解密signature部分
+        $encrypt = new Encrypt();
         $signature = $encrypt->decode($signatureStr);
         //判断解密后的signature是否和 header+payload 一样
         if($signature == $headerStr.'.'.$payloadStr){

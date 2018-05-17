@@ -25,6 +25,8 @@ class Tree {
 
     protected $column_order_name;
 
+    protected $column_isrec_name;
+
     /**
      * 参数为表名和表中字段名
      * Tree constructor.
@@ -36,9 +38,11 @@ class Tree {
      * @param $leftName
      * @param $rightName
      * @param null $coverName
-     * @param null $introName
+     * @param $introName
+     * @param $orderName
+     * @param $isrecName
      */
-    public function __construct(Db $db, $tableName, $idName, $titleName, $fatherName, $leftName, $rightName, $coverName, $introName, $orderName){
+    public function __construct(Db $db, $tableName, $idName, $titleName, $fatherName, $leftName, $rightName, $coverName, $introName, $orderName, $isrecName){
         $this->db = $db;
         $this->table_name = $tableName;
         $this->column_id_name = $idName;
@@ -49,6 +53,7 @@ class Tree {
         $this->column_cover_name = $coverName;
         $this->column_intro_name = $introName;
         $this->column_order_name = $orderName;
+        $this->column_isrec_name = $isrecName;
     }
 
     /**
@@ -63,7 +68,9 @@ class Tree {
                 $this->column_left_name.','.
                 $this->column_right_name.','.
                 $this->column_cover_name.','.
-                $this->column_intro_name.
+                $this->column_intro_name.','.
+                $this->column_order_name.','.
+                $this->column_isrec_name.
                 ' from '.$this->table_name.
                 ' order by '.$this->column_left_name.' asc';
             try{
@@ -97,6 +104,12 @@ class Tree {
         unset($tmp);
     }
 
+    public function get_tree(){
+        $this->init();
+        return $this->map;
+
+    }
+
     /**
      * 获取指定节点的后代
      * @param int $node_id 要获取哪个节点的后代 0表示从对顶层的节点开始
@@ -124,6 +137,26 @@ class Tree {
             return $descendants;
         }
         return false;
+    }
+
+    /**
+     * 获取指定节点到根的路径
+     * @param $node
+     * @return array
+     */
+    public function get_path($node){
+        $this->init();
+        $path = array();
+        //节点必须存在
+        if(isset($this->map[$node])){
+            foreach($this->map as $id=>$value){
+                //遍历map 如果当前遍历项的left小于指定节点的left并且right大于指定节点的right 那么这一项就是指定节点的祖先节点
+                if($value[$this->column_left_name] < $this->map[$node][$this->column_left_name] and $value[$this->column_right_name] > $this->map[$node][$this->column_right_name]){
+                    $path[$value[$this->column_id_name]] = $value;
+                }
+            }
+        }
+        return $path;
     }
 
     public function add($father, $title, $cover=null, $intro=null){
@@ -282,8 +315,8 @@ class Tree {
     public function move($from, $target, $title, $cover=null, $intro=null){
         $this->init();
         $fromDescendants = $this->getDescendants((int)$from, false);
-        //目标节点不能是源节点的后代
-        if(in_array($target, array_keys($fromDescendants))) return false;
+        //目标节点不能是源节点的后代 也不能是自己
+        if(in_array($target, array_keys($fromDescendants)) or $from == $target) return false;
         //源节点和目标节点必须存在 目标节点也可以是0
         if( isset($this->map[$from]) and (isset($this->map[$target]) or $target == 0) ){
             //把源节点的父节点字段改为目标节点
@@ -318,7 +351,7 @@ class Tree {
             if(count($targetDescendants) == 0){
                 //如果目标节点没有后代 源节点会成为目标节点的第一个后代 这时如果目标节点是0 则边界为0
                 //目标节点没有后代且目标节点不是0 则边界为目标节点的left
-                $targetBoundary = $target == 0 ? 0 : $this->map[$this->column_left_name];
+                $targetBoundary = $target == 0 ? 0 : $this->map[$target][$this->column_left_name];
             }else{
                 //如果目标节点有后代，则边界为目标节点最后一个直接后代的right
                 $lastOne = array_pop($targetDescendants);
@@ -341,6 +374,7 @@ class Tree {
                 $item[$this->column_right_name] += $shift;
                 $this->map[$item[$this->column_id_name]] = $item;
             }
+            var_dump($fromDescendants);
             //同步数据库
             //把源节点的left和right乘以-1 使其不会参与后边的数据库操作
             $sql1 = 'update '.$this->table_name.
@@ -351,20 +385,24 @@ class Tree {
             $sql2_1 = 'update '.$this->table_name.
                 ' set '.$this->column_left_name.'='.$this->column_left_name.'-'.$diff.
                 ' where '.$this->column_left_name.'>'.$fromBoundary;
+
             $sql2_2 = 'update '.$this->table_name.
                 ' set '.$this->column_right_name.'='.$this->column_right_name.'-'.$diff.
                 ' where '.$this->column_right_name.'>'.$fromBoundary;
+
             //让目标位置后边的节点让出位置
             $sql3_1 = 'update '.$this->table_name.
                 ' set '.$this->column_left_name.'='.$this->column_left_name.'+'.$diff.
                 ' where '.$this->column_left_name.'>'.$targetBoundary;
+
             $sql3_2 = 'update '.$this->table_name.
                 ' set '.$this->column_right_name.'='.$this->column_right_name.'+'.$diff.
                 ' where '.$this->column_right_name.'>'.$targetBoundary;
+
             //更新源节点的left和right 使其放入目标位置
             $sql4 = 'update '.$this->table_name.
-                ' set '.$this->column_left_name.'=('.$this->column_left_name.'-'.$shift.')*-1,'.
-                        $this->column_right_name.'=('.$this->column_right_name.'-'.$shift.')*-1'.
+                ' set '.$this->column_left_name.'=('.$this->column_left_name.'-('.$shift.'))*-1,'.
+                        $this->column_right_name.'=('.$this->column_right_name.'-('.$shift.'))*-1'.
                 ' where '.$this->column_left_name.'<0';
             //把源节点的父节点字段改为目标节点 并更新title intro cover
             $sql5 = 'update '.$this->table_name.

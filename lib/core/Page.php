@@ -12,7 +12,7 @@ class Page {
     private $right; //页码列表结束页
     private $res = array();
 
-    function __construct($record, $pageSize, $listOneSide = 3){
+    function setup($record, $pageSize, $listOneSide = 3){
         $this->records = intval($record) > 0 ? intval($record) : 1;
         $this->pageSize = intval($pageSize) >= 1 ? intval($pageSize) : 1;
         $this->listOneSide = intval($listOneSide) >= 1 ? intval($listOneSide) : 1;
@@ -36,12 +36,14 @@ class Page {
     }
 
     private function getQuery(){
+        $request = Request::instance();
+        $url = $request->basePath().$request->pathInfo();
         parse_str($_SERVER['QUERY_STRING'], $arr);
         unset($arr['page']);
         if(empty($arr)){
-            $_query = '?page=';
+            $_query = $url.'?page=';
         }else{
-            $_query = '?'.http_build_query($arr).'&page=';
+            $_query = $url.'?'.http_build_query($arr).'&page=';
         }
         return $_query;
     }
@@ -50,7 +52,7 @@ class Page {
         if($this->thisPage != 1){
             $this->res['home'] = $this->query.'1';
         }else{
-            $this->res['home'] = '';
+            $this->res['home'] = '##';
         }
     }
 

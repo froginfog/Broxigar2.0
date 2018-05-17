@@ -42,6 +42,12 @@ class Request {
         return $this->domain;
     }
 
+    public function basePath(){
+        $root = URL_ROOT == '' ? '' : '/'.URL_ROOT;
+        $basePath = '//'.$this->domain().$root;
+        return $basePath;
+    }
+
     /**
      * 获取请求数据流
      * @return bool|string
@@ -83,7 +89,8 @@ class Request {
      * @param AntiXSS $antiXSS
      * @return array|bool|string
      */
-    public function get($name=null, AntiXSS $antiXSS){
+    public function get($name=null){
+        $antiXSS = new AntiXSS();
         $this->get = $_GET;
         if(is_null($name)){
             //如果没有传递name则获取所有get
@@ -94,12 +101,17 @@ class Request {
             return $res;
         }else{
             //如果name为字符串则获取对应的值
-            $res = $antiXSS->xss_clean($this->get[$name]);
+            if(isset($this->get[$name])) {
+                $res = $antiXSS->xss_clean($this->get[$name]);
+            }else{
+                $res = '';
+            }
             return $res;
         }
     }
 
-    public function post($name=null, AntiXSS $antiXSS){
+    public function post($name=null){
+        $antiXSS = new AntiXSS();
         $this->post = $_POST;
         if(is_null($name)){
             //name为null则获取所有post
@@ -110,7 +122,11 @@ class Request {
             return $res;
         }else{
             //name不为null获取对应post
-            $res = $antiXSS->xss_clean($this->post[$name]);
+            if(isset($this->post[$name])) {
+                $res = $antiXSS->xss_clean($this->post[$name]);
+            }else{
+                $res = '';
+            }
             return $res;
         }
 

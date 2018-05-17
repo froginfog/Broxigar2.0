@@ -41,10 +41,10 @@ class Upload {
     public function doUpload(){
         $this->final = '';
         if(!file_exists(APP_ROOT.'/uploads/'.$this->uploadConfig['path']) || !is_writable(APP_ROOT.'/uploads/'.$this->uploadConfig['path'])){
-            die($this->getError(100));
+            return $this->getError(100);
         }
         if($this->fileObject['name'] == ''){
-            die($this->getError(4));
+            return $this->getError(4);
         }
         $name = $this->fileObject['name'];
         $tmp_name = $this->fileObject['tmp_name'];
@@ -56,15 +56,15 @@ class Upload {
                 $this->originName = $name[$i];
                 //检查是否有上传错误
                 if($error[$i] !== UPLOAD_ERR_OK){
-                    die($this->getError($error[$i]));
+                    return $this->getError($error[$i]);
                 }
                 //检查文件大小是否超过自定义大小
                 if($this->uploadConfig['maxSize'] != 0 && $size[$i] > $this->uploadConfig['maxSize']){
-                    die($this->getError(99));
+                    return $this->getError(99);
                 }
                 //检查是否是允许的文件类型
                 if(!empty($this->uploadConfig['allowType']) && !in_array($this->getExt($this->originName), $this->uploadConfig['allowType'])){
-                    die($this->getError(88));
+                    return $this->getError(88);
                 }
                 if(is_uploaded_file($tmp_name[$i])){
 
@@ -78,25 +78,26 @@ class Upload {
                         }else{
                             $sep = ',';
                         }
+
                         $this->final .= $sep.'uploads/'.$this->uploadConfig['path'].'/'.$this->setFolderName().'/'.$this->tmpName;
                     }else{
-                        die($this->getError(102));
+                        return $this->getError(102);
                     }
                 }else{
-                    die($this->getError(101));
+                    return $this->getError(101);
                 }
             }
         }else{
             //单文件上传
             $this->originName = $name;
             if($error !== UPLOAD_ERR_OK){
-                die($this->getError($error));
+               return $this->getError($error);
             }
             if($this->uploadConfig['maxSize'] != 0 && $size > $this->uploadConfig['maxSize']){
-                die($this->getError(99));
+                return $this->getError(99);
             }
             if(!empty($this->uploadConfig['allowType']) && !in_array($this->getExt($this->originName), $this->uploadConfig['allowType'])){
-                die($this->getError(88));
+                return $this->getError(88);
             }
             if(is_uploaded_file($tmp_name)){
                 $this->tmpName = $this->setRandomName($name);
@@ -106,10 +107,10 @@ class Upload {
                 if(move_uploaded_file($tmp_name, APP_ROOT.'/uploads/'.$this->uploadConfig['path'].'/'.$this->setFolderName().'/'.$this->tmpName)){
                     $this->final = 'uploads/'.$this->uploadConfig['path'].'/'.$this->setFolderName().'/'.$this->tmpName;
                 }else{
-                    die($this->getError(102));
+                    return $this->getError(102);
                 }
             }else{
-                die($this->getError(101));
+                return $this->getError(101);
             }
         }
         return true;
@@ -119,7 +120,7 @@ class Upload {
         return $this->final;
     }
 
-    private function getExt($fileName){
+    public function getExt($fileName){
         $name = explode('.',$fileName);
         return strtolower(end($name));
     }
@@ -131,7 +132,7 @@ class Upload {
     }
 
     private function getError($errNum){
-        $str = '文件'.$this->originName.'上传出错：';
+        $str = $this->originName.'上传出错：';
         switch ($errNum){
             case 1:
                 $str .= "上传的文件超过了php.ini中upload_max_filesize选项限制的值";
@@ -152,7 +153,7 @@ class Upload {
                 $str .= "文件写入失败";
                 break;
             case 88:
-                $str .= "不允许的文件类型";
+                $str .= "不允许的文件类型:".$this->getExt($this->originName);
                 break;
             case 99:
                 $str .= '文件大小不能超过'.$this->uploadConfig['maxsize'];

@@ -8,7 +8,7 @@ class VerifyCode {
     private $snow;
     private $line;
     private $font=[];
-    private $chars = 'abcdefghkmnprstuvwxyzABCDEFGHKMNPRSTUVWXYZ23456789';
+    private $chars = 'abcdefghkmnprstuvwxyzABCDEFGHKMNPRSTUVWXYZ2345678';
     private $img;
     private $code;
 

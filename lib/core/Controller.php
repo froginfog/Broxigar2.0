@@ -18,7 +18,7 @@ class Controller {
         }
         self::$smarty->left_delimiter = Config::$conf['smarty']['left'];
         self::$smarty->right_delimiter = Config::$conf['smarty']['right'];
-        self::$smarty->setTemplateDir(Config::$conf['smarty']['template_dir']);
+        self::$smarty->setTemplateDir(Config::$conf['smarty']['template_dir'].'/'.Config::$mod);
         self::$smarty->setCompileDir(Config::$conf['smarty']['compile_dir']);
         self::$smarty->setCacheDir(Config::$conf['smarty']['cache_dir']);
         self::$smarty->addPluginsDir(Config::$conf['smarty']['plugins_dir']);
@@ -33,17 +33,15 @@ class Controller {
         return self::$smarty->assign($tpl_var, $value, $nocache);
     }
 
-    protected function render($templateFile = null, $cache_id = null, $compile_id = null, $parent = null){
+    protected function render($templateFile, $cache_id = null, $compile_id = null, $parent = null){
         $this->smartyInit();
         $os = new Os();
-
         //如果设置为开启移动端 且客户端为移动端 且指定的移动端模板存在 则优先渲染移动端模板
-        if(Config::$conf['has_mobile'] && $os->isMobile() && self::$smarty->templateExists(Config::$mod . '/mobile/' . $templateFile)) {
-            $pathToFile = Config::$mod . '/mobile/' . $templateFile;
+        if(Config::$conf['has_mobile'] && $os->isMobile() && self::$smarty->templateExists('mobile/' . $templateFile)) {
+            $pathToFile = 'mobile/' . $templateFile;
             return self::$smarty->display($pathToFile, $cache_id, $compile_id, $parent);
         }else{
-            $pathToFile = Config::$mod . '/' . $templateFile;
-            return self::$smarty->display($pathToFile, $cache_id, $compile_id, $parent);
+            return self::$smarty->display($templateFile, $cache_id, $compile_id, $parent);
         }
 
     }
@@ -51,6 +49,7 @@ class Controller {
     protected function jsonResponse($arr){
         header("Content-type: application/json");
         echo json_encode($arr, JSON_HEX_TAG);
+        exit;
     }
 
     /**
