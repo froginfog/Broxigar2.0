@@ -11,9 +11,9 @@ function smarty_function_url($params){
     }
     $request = Request::instance();
     $domain = $request->domain();
-    $root = URL_ROOT == '' ? '' : '/'.URL_ROOT;
-    $prefix = Config::$conf['url_prefix'] == '' ? '' : '/'.Config::$conf['url_prefix'];
-    $path = $params['path'] == '' ? '' : '/'.implode('/', $params);
+    $root = URL_ROOT == '' ? '' : '/'.URL_ROOT.'/';
+    $prefix = Config::$conf['url_prefix'] == '' ? '' : Config::$conf['url_prefix'].'/';
+    $path = $params['path'] == '' ? '' : implode('/', $params);
     $suffix = $params['path'] == '' ? '' : Config::$conf['url_suffix'];
     $res = '//'.$domain.$root.$prefix.$path.$suffix.$anchor;
     return $res;
