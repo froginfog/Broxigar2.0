@@ -49,23 +49,30 @@ class Jwt {
     }
 
     /**
-     * 验证收到的jwt字符串
+     * 验证收到的jwt字符串,如果没通过验证会返回错误位置
      * @param $jwtstr
-     * @param \lib\core\Encrypt $encrypt
      * @return bool|mixed
      */
     public function resolveJwt($jwtstr){
+        $err = array(
+            'result' => false
+        );
         //把收到的jwt串拆成数组
         $jwtarr = explode('.', $jwtstr);
         //数组长度不是3 出错
-        if(count($jwtarr) != 3) return false;
+        if(count($jwtarr) != 3){
+            $err['length'] = false;
+        }
 
         list($headerStr, $payloadStr, $signatureStr) = $jwtarr;
         //payload部分解析成数组
         $payloadJson = base64_decode($payloadStr);
         $payloadArr = json_decode($payloadJson, true);
         //如果过期 出错
-        if($payloadArr['exp'] < $_SERVER['REQUEST_TIME']) return false;
+        if($payloadArr['exp'] < $_SERVER['REQUEST_TIME']) {
+            $err['expire'] = false;
+        }
+
         //解密signature部分
         $encrypt = new Encrypt();
         $signature = $encrypt->decode($signatureStr);
@@ -75,7 +82,8 @@ class Jwt {
             return $payloadArr;
         }else{
             //不一样 出错
-            return false;
+            $err['data'] = false;
         }
+        return $err;
     }
 }
