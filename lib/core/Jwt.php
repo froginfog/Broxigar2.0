@@ -83,10 +83,10 @@ class Jwt {
             $err['result'] = false;
             $err['data'] = false;
         }
-        if($err['result'] === true){
-            return$payloadArr;
-        }else{
+        if($err['error']){
             return $err;
+        }else{
+            return $payloadArr;
         }
 
     }
