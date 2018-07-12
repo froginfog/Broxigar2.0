@@ -55,12 +55,13 @@ class Jwt {
      */
     public function resolveJwt($jwtstr){
         $err = array(
-            'result' => false
+            'result' => true
         );
         //把收到的jwt串拆成数组
         $jwtarr = explode('.', $jwtstr);
         //数组长度不是3 出错
         if(count($jwtarr) != 3){
+            $err['result'] = false;
             $err['length'] = false;
         }
 
@@ -68,8 +69,9 @@ class Jwt {
         //payload部分解析成数组
         $payloadJson = base64_decode($payloadStr);
         $payloadArr = json_decode($payloadJson, true);
-        //如果过期 出错
-        if($payloadArr['exp'] < $_SERVER['REQUEST_TIME']) {
+        //如果设置了过期时间 并且过期 出错
+        if(array_key_exists('exp', $payloadArr) and $payloadArr['exp'] < $_SERVER['REQUEST_TIME']) {
+            $err['result'] = true;
             $err['expire'] = false;
         }
 
@@ -77,13 +79,15 @@ class Jwt {
         $encrypt = new Encrypt();
         $signature = $encrypt->decode($signatureStr);
         //判断解密后的signature是否和 header+payload 一样
-        if($signature == $headerStr.'.'.$payloadStr){
-            //一样返回payload部分的信息
-            return $payloadArr;
-        }else{
-            //不一样 出错
+        if($signature != $headerStr.'.'.$payloadStr){
+            $err['result'] = false;
             $err['data'] = false;
         }
-        return $err;
+        if($err['result'] === true){
+            return$payloadArr;
+        }else{
+            return $err;
+        }
+
     }
 }
