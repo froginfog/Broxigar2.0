@@ -131,4 +131,12 @@ class Request {
         }
 
     }
+	
+	public function json(){
+        $antiXSS = new AntiXSS();
+        $antiXSS->removeEvilAttributes(array('style'));
+        $_res = $antiXSS->xss_clean($this->phpInput());
+        $res = json_decode($_res, true);
+        return $res;
+    }
 }
